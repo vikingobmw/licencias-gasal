@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Modelos del Servidor de Licencias (MANTENER NOMBRES PARA EL CÓDIGO)
+model Licencia {
+  id              String       @id @default(cuid())
+  key             String       @unique
+  productoId      String
+  producto        Producto     @relation(fields: [productoId], references: [id])
+  nombreUsuario   String?
+  emailUsuario    String?
+  activa          Boolean      @default(true)
+  fechaCreacion   DateTime     @default(now())
+  fechaExpiracion DateTime?
+  maxActivaciones Int          @default(1)
+  maxAsociaciones Int          @default(1)
+  activaciones    Activacion[]
+  initialPassword String?
+
+  @@map("gasal_licencias")
+}
+
+model Producto {
+  id        String     @id @default(cuid())
+  nombre    String     @unique
+  licencias Licencia[]
+
+  @@map("gasal_productos")
+}
+
+model Activacion {
+  id           String   @id @default(cuid())
+  licenciaId   String
+  licencia     Licencia @relation(fields: [licenciaId], references: [id])
+  hwid         String
+  nombreEquipo String?
+  fecha        DateTime @default(now())
+  ip           String?
+
+  @@map("gasal_activaciones")
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  username String @unique
+  password String
+
+  @@map("gasal_admins")
+}
+
+// Modelos de la Aplicación de Contabilidad (RENOMBRADOS PARA EVITAR CONFLICTOS)
+model AsocLicencia {
+  id              String       @id @default(cuid()) // Mapped to existing Licencia
+  codigo          String       @unique
+  activa          Boolean      @default(true)
+  maxAsociaciones Int          @default(1)
+  usuarioId       String?
+  fechaActivacion DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime
+  Usuario         AsocUsuario? @relation(fields: [usuarioId], references: [id])
+
+  @@map("Licencia")
+}
+
+model AsocUsuario {
+  id                 String              @id @default(cuid())
+  username           String              @unique
+  password           String
+  nombre             String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime
+  rol                String              @default("USER")
+  email              String?             @unique
+  mustChangePassword Boolean             @default(false)
+  Licencias          AsocLicencia[]
+  UsuarioAsociaciones AsocUsuarioAsociacion[]
+
+  @@map("Usuario")
+}
+
+model AsocAsociacion {
+  id                String              @id
+  nombre            String
+  nif               String              @unique
+  direccion         String?
+  telefono          String?
+  email             String?
+  logoUrl           String?
+  cuentaBancaria    String?
+  apiKey            String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  Cliente           AsocCliente[]
+  Factura           AsocFactura[]
+  Presupuesto       AsocPresupuesto[]
+  Socio             AsocSocio[]
+  Transaccion       AsocTransaccion[]
+  UsuarioAsociaciones AsocUsuarioAsociacion[]
+
+  @@map("Asociacion")
+}
+
+model AsocUsuarioAsociacion {
+  id           String         @id
+  usuarioId    String
+  asociacionId String
+  rol          String         @default("ADMIN")
+  Asociacion   AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Usuario      AsocUsuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, asociacionId])
+  @@map("UsuarioAsociacion")
+}
+
+model AsocCliente {
+  id           String         @id
+  nombre       String
+  nif          String
+  direccion    String?
+  email        String?
+  telefono     String?
+  asociacionId String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  Asociacion   AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Factura      AsocFactura[]
+  Presupuesto  AsocPresupuesto[]
+
+  @@unique([nif, asociacionId])
+  @@map("Cliente")
+}
+
+model AsocFactura {
+  id           String            @id
+  numero       String
+  fecha        DateTime          @default(now())
+  estado       String            @default("PENDIENTE")
+  subtotal     Float
+  impuestos    Float
+  total        Float
+  notas        String?
+  metodoPago   String?
+  clienteId    String
+  asociacionId String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime
+  Asociacion   AsocAsociacion    @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Cliente      AsocCliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  LineaFactura AsocLineaFactura[]
+  Transaccion  AsocTransaccion[]
+
+  @@unique([numero, asociacionId])
+  @@map("Factura")
+}
+
+model AsocPresupuesto {
+  id               String                 @id
+  numero           String
+  fecha            DateTime               @default(now())
+  validezDias      Int                    @default(30)
+  estado           String                 @default("BORRADOR")
+  subtotal         Float
+  impuestos        Float
+  total            Float
+  notas            String?
+  clienteId        String
+  asociacionId     String
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime
+  LineaPresupuesto AsocLineaPresupuesto[]
+  Asociacion       AsocAsociacion         @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Cliente          AsocCliente            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([numero, asociacionId])
+  @@map("Presupuesto")
+}
+
+model AsocSocio {
+  id                  String          @id
+  nombre              String
+  apellidos           String
+  dni                 String
+  email               String?
+  telefono            String?
+  fechaAlta           DateTime        @default(now())
+  asociacionId        String
+  cuotaPredeterminada Float?
+  periodicidad        String          @default("MENSUAL")
+  Asociacion          AsocAsociacion  @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Transaccion         AsocTransaccion[]
+
+  @@unique([dni, asociacionId])
+  @@map("Socio")
+}
+
+model AsocTransaccion {
+  id            String         @id
+  fecha         DateTime
+  tipo          String
+  categoria     String
+  importe       Float
+  concepto      String
+  metodoPago    String?
+  adjuntoUrl    String?
+  socioId       String?
+  facturaId     String?
+  asociacionId  String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  baseImponible Float?
+  ivaCuota      Float?
+  Asociacion    AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  Factura       AsocFactura?   @relation(fields: [facturaId], references: [id])
+  Socio         AsocSocio?     @relation(fields: [socioId], references: [id])
+
+  @@map("Transaccion")
+}
+
+model AsocLineaFactura {
+  id             String      @id
+  descripcion    String
+  cantidad       Float
+  precioUnitario Float
+  tipoIva        Float       @default(21)
+  totalLinea     Float
+  facturaId      String
+  Factura        AsocFactura @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("LineaFactura")
+}
+
+model AsocLineaPresupuesto {
+  id             String          @id
+  descripcion    String
+  cantidad       Float
+  precioUnitario Float
+  tipoIva        Float           @default(21)
+  totalLinea     Float
+  presupuestoId  String
+  Presupuesto    AsocPresupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+
+  @@map("LineaPresupuesto")
+}
+
+model AsocGlobalConfig {
+  id              String    @id @default("singleton")
+  appLicenseKey   String?
+  isActivated     Boolean   @default(false)
+  activatedAt     DateTime?
+  updatedAt       DateTime
+  maxActivaciones Int       @default(1)
+  maxAsociaciones Int       @default(1)
+
+  @@map("GlobalConfig")
+}
+
+enum Periodicidad {
+  MENSUAL
+  TRIMESTRAL
+  ANUAL
+}
+
+enum RolAsociacion {
+  ADMIN
+  GESTOR
+  VISOR
+  SOLICITANTE
+}
+
+enum RolGlobal {
+  USER
+  SUPERADMIN
+}
