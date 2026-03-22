@@ -9,7 +9,7 @@ export async function getLicencias() {
       producto: true,
       activaciones: true 
     },
-    orderBy: { createdAt: 'desc' }
+            orderBy: { fechaCreacion: 'desc' }
   });
 }
 
