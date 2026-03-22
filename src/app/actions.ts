@@ -139,7 +139,7 @@ expexport async function crearProducto(nombre: string) {
     }
 }
 
-exp async function editarProducto(id: string, data: { nombre: string }) {
+export  async function editarProducto(id: string, data: { nombre: string }) {
     try {
           const producto = await prisma.producto.update({
                   where: { id },
