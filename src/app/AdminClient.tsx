@@ -206,7 +206,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                         </div>
                       </div>
                       <div className="text-slate-300 flex flex-col items-end gap-1">
-                        <div>Creada {format(new Date(l.createdAt), 'dd MMM yyyy')}</div>
+                        <div>Creada {format(new Date(l.fechaCreacion), 'dd MMM yyyy')}</div>
                         {l.fechaExpiracion && (
                           <div className="text-amber-500">Expira {format(new Date(l.fechaExpiracion), 'dd MMM yyyy')}</div>
                         )}
