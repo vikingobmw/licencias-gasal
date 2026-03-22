@@ -218,7 +218,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                         <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Historial Equipos</p>
                         {l.activaciones.map((a: any) => (
                           <div key={a.id} className="flex justify-between text-[11px] font-medium">
-                            <span className="font-mono text-slate-600 dark:text-slate-400">{a.hardwareId}</span>
+                            <span className="font-mono text-slate-600 dark:text-slate-400">{a.hwid}</span>
                             <span className="text-slate-400">{format(new Date(a.fecha), 'dd/MM/yy HH:mm')}</span>
                           </div>
                         ))}
@@ -347,8 +347,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                   e.preventDefault();
                   setLoading(true);
                   const name = (e.currentTarget.elements.namedItem('pname') as HTMLInputElement).value;
-                  const url = (e.currentTarget.elements.namedItem('purl') as HTMLInputElement).value;
-                  const res = await crearProducto(name, url);
+                  const res = await crearProducto(name);
                   setLoading(false);
                   if (res.success) {
                     toast.success('Producto añadido');
@@ -359,10 +358,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nombre de Aplicación</label>
                     <input name="pname" required className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition-all font-bold" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">URL de Ejecución</label>
-                    <input name="purl" placeholder="http://localhost:3000" className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition-all" />
-                  </div>
+
                   <button disabled={loading} type="submit" className="w-full p-5 bg-slate-900 text-white rounded-3xl font-black uppercase tracking-widest hover:bg-black transition-all">
                     {loading ? 'Registrando...' : 'Registrar Aplicación'}
                   </button>
@@ -377,11 +373,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                         {p.url && <span className="text-xs text-blue-500 font-medium">{p.url}</span>}
                       </div>
                       <div className="flex gap-2">
-                        {p.url && (
-                          <a href={p.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 flex items-center gap-1 text-xs font-bold uppercase tracking-widest">
-                            <Globe size={14} /> Abrir
-                          </a>
-                        )}
+
                         <button 
                           onClick={() => {
                             setEditingProductId(p.id);
@@ -430,19 +422,11 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                           className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition-all font-bold"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">URL de Ejecución</label>
-                        <input
-                          value={productFormData.url}
-                          placeholder="http://localhost:3000"
-                          onChange={e => setProductFormData({ ...productFormData, url: e.target.value })}
-                          className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none ring-2 ring-transparent focus:ring-blue-500 transition-all"
-                        />
-                      </div>
+
                       <div className="flex gap-4">
                         <button 
                           onClick={async () => {
-                            const res = await (import('./actions').then(m => m.editarProducto(editingProductId, productFormData)));
+                            const res = await (import('./actions').then(m => m.editarProducto(editingProductId, { nombre: productFormData.nombre })));
                             if(res.success) {
                               toast.success('Producto actualizado');
                               setEditingProductId(null);
@@ -494,7 +478,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                     </li>
                     {confirmDelete.details.activations.slice(0, 3).map((a: any) => (
                       <li key={a.id} className="text-[10px] text-slate-400 px-3 bg-white/50 dark:bg-slate-800/50 py-1 rounded-lg">
-                        Machine ID: {a.hardwareId}
+                        Machine ID: {a.hwid}
                       </li>
                     ))}
                   </>

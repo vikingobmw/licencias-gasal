@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Verificar si ya está activada en este equipo
-    const yaActivada = licencia.activaciones.find(a => a.hardwareId === hardwareId);
+    const yaActivada = licencia.activaciones.find(a => a.hwid === hardwareId);
     if (yaActivada) {
       return NextResponse.json(
         { 
@@ -86,12 +86,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Registrar nueva activación
     await prisma.activacion.create({
       data: {
         licenciaId: licencia.id,
-        hardwareId,
-        osInfo: osInfo || 'Desconocido'
+        hwid: hardwareId,
+        nombreEquipo: osInfo || 'Desconocido'
       }
     });
 
