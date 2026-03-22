@@ -129,7 +129,7 @@ export async function editarLicencia(id: string, data: {
   }
 }
 
-expexport async function crearProducto(nombre: string) {
+export async function crearProducto(nombre: string) {
     try {
           const producto = await prisma.producto.create({ data: { nombre } });
           revalidatePath('/');
