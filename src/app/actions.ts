@@ -129,57 +129,35 @@ export async function editarLicencia(id: string, data: {
   }
 }
 
-export async function crearProducto(nombre: string, url?: string) {
-  try {
-    const producto = await prisma.producto.create({ data: { nombre, url } });
-    revalidatePath('/');
-    return { success: true, producto };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+expexport async function crearProducto(nombre: string) {
+    try {
+          const producto = await prisma.producto.create({ data: { nombre } });
+          revalidatePath('/');
+          return { success: true, producto };
+    } catch (error: any) {
+          return { success: false, error: error.message };
+    }
 }
 
-export async function editarProducto(id: string, data: { nombre: string, url?: string }) {
-  try {
-    const producto = await prisma.producto.update({
-      where: { id },
-      data: { nombre: data.nombre, url: data.url }
-    });
-    revalidatePath('/');
-    return { success: true, producto };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+exp async function editarProducto(id: string, data: { nombre: string }) {
+    try {
+          const producto = await prisma.producto.update({
+                  where: { id },
+                  data: { nombre: data.nombre }
+          });
+          revalidatePath('/');
+          return { success: true, producto };
+    } catch (error: any) {
+          return { success: false, error: error.message };
+    }
 }
 
 export async function borrarProducto(id: string) {
-  try {
-    // 1. Obtener todas las licencias del producto
-    const licencias = await prisma.licencia.findMany({
-      where: { productoId: id },
-      select: { id: true }
-    });
-    const licenciaIds = licencias.map(l => l.id);
-
-    // 2. Transacción para borrar todo en orden
-    await prisma.$transaction([
-      // Borrar activaciones de todas esas licencias
-      prisma.activacion.deleteMany({
-        where: { licenciaId: { in: licenciaIds } }
-      }),
-      // Borrar las licencias
-      prisma.licencia.deleteMany({
-        where: { productoId: id }
-      }),
-      // Finalmente borrar el producto
-      prisma.producto.delete({
-        where: { id }
-      })
-    ]);
-
-    revalidatePath('/');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+    try {
+          await prisma.producto.delete({ where: { id } });
+          revalidatePath('/');
+          return { success: true };
+    } catch (error: any) {
+          return { success: false, error: error.message };
+    }
 }
