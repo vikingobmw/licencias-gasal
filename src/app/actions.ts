@@ -79,19 +79,23 @@ export async function crearLicencia(data: {
 }
 
 export async function toggleLicencia(id: string, activa: boolean) {
-  await prisma.licencia.update({
-    where: { id },
-    data: { activa }
-  });
-  revalidatePath('/');
+  try {
+    await prisma.licencia.update({
+      where: { id },
+      data: { activa }
+    });
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }
 
 export async function borrarLicencia(id: string) {
   try {
-    await prisma.$transaction([
-      prisma.activacion.deleteMany({ where: { licenciaId: id } }),
-      prisma.licencia.delete({ where: { id } })
-    ]);
+    // Eliminamos en dos pasos (PgBouncer no soporta transacciones interactivas)
+    await prisma.activacion.deleteMany({ where: { licenciaId: id } });
+    await prisma.licencia.delete({ where: { id } });
     revalidatePath('/');
     return { success: true };
   } catch (error: any) {
@@ -161,21 +165,10 @@ export async function borrarProducto(id: string) {
     });
     const licenciaIds = licencias.map(l => l.id);
 
-    // 2. Transacción para borrar todo en orden
-    await prisma.$transaction([
-      // Borrar activaciones de todas esas licencias
-      prisma.activacion.deleteMany({
-        where: { licenciaId: { in: licenciaIds } }
-      }),
-      // Borrar las licencias
-      prisma.licencia.deleteMany({
-        where: { productoId: id }
-      }),
-      // Finalmente borrar el producto
-      prisma.producto.delete({
-        where: { id }
-      })
-    ]);
+    // 2. Borrar en pasos secuenciales (PgBouncer no soporta transacciones interactivas)
+    await prisma.activacion.deleteMany({ where: { licenciaId: { in: licenciaIds } } });
+    await prisma.licencia.deleteMany({ where: { productoId: id } });
+    await prisma.producto.delete({ where: { id } });
 
     revalidatePath('/');
     return { success: true };

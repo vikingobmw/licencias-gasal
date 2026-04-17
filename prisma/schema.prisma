@@ -96,6 +96,7 @@ model AsocAsociacion {
   logoUrl           String?
   cuentaBancaria    String?
   apiKey            String?             @unique
+  prefijoFactura    String              @default("Fact")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime
   Cliente           AsocCliente[]
@@ -104,6 +105,22 @@ model AsocAsociacion {
   Socio             AsocSocio[]
   Transaccion       AsocTransaccion[]
   UsuarioAsociaciones AsocUsuarioAsociacion[]
+
+  // Verifactu & Fiscal
+  verifactuEnabled   Boolean             @default(false)
+  testMode           Boolean             @default(true)
+  certificadoBase64  String?             // Encrypted certificate
+  certificadoPass    String?             // Encrypted password
+  ultimoHash         String?             // Last record hash for chaining
+  registrosVerifactu AsocRegistroFacturacion[]
+  modelosTributarios AsocModeloTributario[]
+  
+  // Tienda Settings
+  configTiendaJson   String?             @default("{}")
+  instagramUrl       String?
+  facebookUrl        String?
+  AsocProducto       AsocProducto[]
+  AsocTiendaPedido   AsocTiendaPedido[]
 
   @@map("Asociacion")
 }
@@ -156,6 +173,11 @@ model AsocFactura {
   Cliente      AsocCliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   LineaFactura AsocLineaFactura[]
   Transaccion  AsocTransaccion[]
+
+  // Verifactu
+  verifactuStatus    String?             @default("NO_ENVIADO") // NO_ENVIADO, ENVIADO, ERROR, ACEPTADO
+  verifactuFechaEnvio DateTime?
+  verifactuRegistro  AsocRegistroFacturacion?
 
   @@unique([numero, asociacionId])
   @@map("Factura")
@@ -278,4 +300,106 @@ enum RolAsociacion {
 enum RolGlobal {
   USER
   SUPERADMIN
+}
+
+model AsocRegistroFacturacion {
+  id              String     @id @default(cuid())
+  facturaId       String     @unique
+  asociacionId    String
+  xmlEnviado       String
+  xmlRespuesta     String?
+  hash            String
+  hashEncadenamiento String?
+  fechaRegistro    DateTime   @default(now())
+  estado          String     // ENVIADO, ACEPTADO, RECHAZADO
+  
+  Factura         AsocFactura    @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  Asociacion      AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+
+  @@map("RegistroFacturacion")
+}
+
+model AsocModeloTributario {
+  id              String         @id @default(cuid())
+  asociacionId    String
+  tipo            String         // 303, 111, 200, etc.
+  ejercicio       Int
+  periodo         String         // 1T, 2T, 3T, 4T, anual
+  datosJson       String
+  ficheroGenerado String?
+  estado          String         @default("BORRADOR") // BORRADOR, GENERADO, PRESENTADO
+  fechaPresentacion DateTime?
+  codPresentacion  String?        // CSV or receipt number from AEAT
+  
+  Asociacion      AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+
+  @@unique([asociacionId, tipo, ejercicio, periodo])
+  @@map("ModeloTributario")
+}
+
+model AsocProducto {
+  id             String         @id @default(cuid())
+  nombre         String
+  descripcion    String?
+  precio         Float
+  precioOutlet   Float?
+  esOutlet       Boolean        @default(false)
+  stock          Int            @default(0)
+  imagenUrl      String?
+  imagenesJson   String?
+  categoria      String?
+  asociacionId   String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  Asociacion     AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  AsocLineaPedido AsocLineaPedido[]
+
+  @@map("Producto")
+}
+
+model AsocTiendaPedido {
+  id             String         @id @default(cuid())
+  numero         String         @unique
+  fecha          DateTime       @default(now())
+  estado         String         @default("PENDIENTE")
+  total          Float
+  clienteNombre  String
+  clienteEmail   String
+  clienteTelefono String?
+  direccion      String
+  ciudad         String
+  codigoPostal   String
+  provincia      String
+  metodoPago     String         @default("SUMUP")
+  trackIdGLS     String?
+  payIdSumUp     String?
+  notas          String?
+  trackingHash   String?        @unique
+  
+  costeEnvioDeducido  Float?
+  comisionPasarela    Float?
+  netoAsociacion      Float?
+  contabilizado       Boolean        @default(false)
+  
+  asociacionId   String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  Asociacion     AsocAsociacion @relation(fields: [asociacionId], references: [id], onDelete: Cascade)
+  AsocLineaPedido AsocLineaPedido[]
+
+  @@map("TiendaPedido")
+}
+
+model AsocLineaPedido {
+  id             String           @id @default(cuid())
+  pedidoId       String
+  productoId     String?
+  descripcion    String
+  cantidad       Int
+  precioUnitario Float
+  totalLinea     Float
+  AsocTiendaPedido AsocTiendaPedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  AsocProducto     AsocProducto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
+
+  @@map("LineaPedido")
 }

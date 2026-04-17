@@ -158,7 +158,7 @@ export default function AdminClient({ licencias, productos }: { licencias: any[]
                         <button onClick={() => startEdit(l)} className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100">
                           <Edit3 size={18} />
                         </button>
-                        <button onClick={() => toggleLicencia(l.id, !l.activa)} className={`p-2 rounded-xl border transition-colors ${l.activa ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'}`}>
+                        <button onClick={async () => { const r = await toggleLicencia(l.id, !l.activa); if (r && !r.success) toast.error(r.error || 'Error al cambiar estado'); }} className={`p-2 rounded-xl border transition-colors ${l.activa ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'}`}>
                           <Power size={18} />
                         </button>
                         <button 
