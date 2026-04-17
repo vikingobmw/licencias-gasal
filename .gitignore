@@ -6,3 +6,13 @@ node_modules
 .vercel
 .env*.local
 dev.db
+
+# TypeScript generated files
+next-env.d.ts
+*.tsbuildinfo
+
+# Dev utility scripts (not needed in production)
+create_licencias.sql
+migrate_license.js
+query_local_licencias.js
+recover_gasal_tables.js
